@@ -19,10 +19,9 @@ app.use(express.json());
 
 // ✅ Updated CORS Configuration
 app.use(cors({
-    origin: 'http://localhost:3000', // Allow frontend domain
-    credentials: true, // Allow sending cookies/session data
+    origin: ['http://localhost:3000', 'https://pursepilot-frontend.onrender.com'], // ✅ Allow both local & deployed frontend
+    credentials: true, // ✅ Allow cookies/session sharing
 }));
-
 app.use(morgan('dev'));
 
 // Session Middleware
