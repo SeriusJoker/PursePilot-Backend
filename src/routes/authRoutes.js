@@ -3,6 +3,9 @@ const passport = require('passport');
 
 const router = express.Router();
 
+// Load frontend URL from environment variables
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
 // @route   GET /api/auth/google
 // @desc    Start Google OAuth Login
 router.get('/google',
@@ -14,7 +17,7 @@ router.get('/google',
 router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
-        res.redirect('http://localhost:3000/dashboard'); // Redirect user to frontend
+        res.redirect(`${FRONTEND_URL}/dashboard`); // Redirect user to frontend
     }
 );
 
