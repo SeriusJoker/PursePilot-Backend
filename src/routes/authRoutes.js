@@ -17,11 +17,12 @@ router.get('/google',
 router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
-        console.log(`✅ Redirecting to: ${FRONTEND_URL}/dashboard`); // Debug log
+        console.log(`✅ Google Login Success: User - ${req.user ? req.user.email : "No user"}`);
+        console.log(`✅ Redirecting to: ${FRONTEND_URL}/dashboard`);
+
         res.redirect(`${FRONTEND_URL}/dashboard`);
     }
 );
-
 
 // @route   GET /api/auth/logout
 // @desc    Logout user
