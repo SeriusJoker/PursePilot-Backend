@@ -5,7 +5,6 @@ const router = express.Router();
 
 // Load frontend URL from environment variables
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
 // @route   GET /api/auth/google
 // @desc    Start Google OAuth Login
@@ -20,22 +19,32 @@ router.get('/google/callback',
     (req, res) => {
         console.log(`✅ Google Login Success: User - ${req.user ? req.user.email : "No user"}`);
         console.log(`✅ Redirecting to: ${FRONTEND_URL}/dashboard`);
-
         res.redirect(`${FRONTEND_URL}/dashboard`);
     }
 );
 
 // @route   GET /api/auth/logout
 // @desc    Logout user
-router.get('/logout', (req, res) => {
-    req.logout(() => {
-        res.send({ message: "Logged out successfully" });
+router.get('/logout', async (req, res) => {
+    req.logout(function(err) {
+        if (err) {
+            console.error("❌ Logout Error:", err);
+            return res.status(500).send({ error: "Logout failed" });
+        }
+        req.session.destroy(() => { // ✅ Destroy session to fully log out
+            res.clearCookie('connect.sid'); // ✅ Clear session cookie
+            res.send({ message: "Logged out successfully" });
+        });
     });
 });
 
 // @route   GET /api/auth/check
 // @desc    Check if user is authenticated
-router.get('/auth/check', (req, res) => {
+router.get('/check', (req, res) => {
+    console.log("🔍 Checking Authentication Status...");
+    console.log("📌 Session Data:", req.session);
+    console.log("📌 User Data:", req.user);
+
     if (req.isAuthenticated()) {
         res.status(200).json({ user: req.user });
     } else {
