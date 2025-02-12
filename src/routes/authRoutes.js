@@ -19,22 +19,29 @@ router.get('/google/callback',
     (req, res) => {
         console.log(`✅ Google Login Success: User - ${req.user ? req.user.email : "No user"}`);
         
-        // Log session and user immediately after login
+        // 🔍 Debug session immediately after login
         console.log("📌 Session After Login:", req.session);
         console.log("📌 User After Login:", req.user);
 
-        res.redirect(`${FRONTEND_URL}/dashboard`);
+        // Ensure session is saved before redirecting
+        req.session.save(err => {
+            if (err) {
+                console.error("❌ Error saving session:", err);
+            }
+            res.redirect(`${FRONTEND_URL}/dashboard`);
+        });
     }
 );
 
 // @route   GET /api/auth/logout
 // @desc    Logout user
-router.get('/logout', async (req, res) => {
+router.get('/logout', (req, res) => {
     req.logout(function(err) {
         if (err) {
             console.error("❌ Logout Error:", err);
             return res.status(500).send({ error: "Logout failed" });
         }
+
         req.session.destroy(() => { // ✅ Destroy session to fully log out
             res.clearCookie('connect.sid'); // ✅ Clear session cookie
             res.send({ message: "Logged out successfully" });
