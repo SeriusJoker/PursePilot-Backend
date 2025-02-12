@@ -4,6 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const session = require('express-session');
 const passport = require('passport');
+const MongoStore = require('connect-mongo'); // ✅ Import connect-mongo
 require('./config/passport'); // Load Passport configuration
 const connectDB = require('./config/db');
 const cron = require('node-cron');
@@ -12,7 +13,7 @@ const processRecurringTransactions = require('./processRecurringTransactions');
 const app = express();
 
 // Connect to MongoDB
-connectDB();
+const mongooseConnection = connectDB();
 
 // Middleware
 app.use(express.json());
@@ -24,11 +25,20 @@ app.use(cors({
 }));
 app.use(morgan('dev'));
 
-// Session Middleware
+// ✅ Configure session storage in MongoDB
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    store: MongoStore.create({ 
+        mongoUrl: process.env.MONGO_URI, // ✅ Store sessions in MongoDB
+        collectionName: 'sessions',
+    }),
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24, // ✅ 1-day session lifespan
+        secure: process.env.NODE_ENV === 'production', // ✅ Secure cookies in production
+        httpOnly: true,
+    }
 }));
 
 app.use(passport.initialize());
