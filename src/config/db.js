@@ -13,7 +13,7 @@ const connectDB = async () => {
 
         console.log(`✅ MongoDB Connected Successfully: ${conn.connection.host}`);
 
-        // Handle disconnections and attempt reconnection with a delay
+        // Handle disconnections and attempt reconnection
         mongoose.connection.on('disconnected', async () => {
             console.error("⚠️ MongoDB Disconnected! Retrying in 5 seconds...");
             setTimeout(connectDB, 5000);
@@ -23,7 +23,7 @@ const connectDB = async () => {
             console.error(`❌ MongoDB Connection Error: ${err.message}`);
         });
 
-        return mongoose.connection; // ✅ Return the connection for session storage
+        return conn; // ✅ Return the actual connection object, not just `mongoose.connection`
 
     } catch (error) {
         console.error(`❌ MongoDB Connection Failed: ${error.message}`);
