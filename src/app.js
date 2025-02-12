@@ -5,6 +5,7 @@ const morgan = require('morgan');
 const session = require('express-session');
 const passport = require('passport');
 const MongoStore = require('connect-mongo');
+require('./config/passport'); // ✅ Ensure passport is initialized
 const connectDB = require('./config/db');
 const cron = require('node-cron');
 const processRecurringTransactions = require('./processRecurringTransactions');
@@ -12,7 +13,7 @@ const processRecurringTransactions = require('./processRecurringTransactions');
 const app = express();
 
 (async () => {
-    await connectDB(); // ✅ Ensure MongoDB connects before anything else
+    await connectDB(); // ✅ Ensure MongoDB connects before starting Express
 
     // Middleware
     app.use(express.json());
@@ -23,7 +24,7 @@ const app = express();
     }));
     app.use(morgan('dev'));
 
-    // ✅ Configure session storage AFTER MongoDB connects
+    // ✅ Ensure sessions are set up properly
     app.use(session({
         secret: process.env.SESSION_SECRET,
         resave: false,
@@ -39,6 +40,7 @@ const app = express();
         }
     }));
 
+    // ✅ Load passport after session middleware
     app.use(passport.initialize());
     app.use(passport.session());
 
