@@ -18,7 +18,11 @@ router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
         console.log(`✅ Google Login Success: User - ${req.user ? req.user.email : "No user"}`);
-        console.log(`✅ Redirecting to: ${FRONTEND_URL}/dashboard`);
+        
+        // Log session and user immediately after login
+        console.log("📌 Session After Login:", req.session);
+        console.log("📌 User After Login:", req.user);
+
         res.redirect(`${FRONTEND_URL}/dashboard`);
     }
 );
