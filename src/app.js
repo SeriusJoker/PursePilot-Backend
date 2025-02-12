@@ -42,14 +42,20 @@ const app = express();
             secret: process.env.SESSION_SECRET,
             resave: false,
             saveUninitialized: false,
-            store: sessionStore, // ✅ Ensure we are using the store
+            store: MongoStore.create({
+                mongoUrl: process.env.MONGO_URI,
+                dbName: 'finance_app',  // ✅ Explicitly set the database name
+                collectionName: 'sessions',
+                autoRemove: 'native', 
+            }),
             cookie: {
-                maxAge: 1000 * 60 * 60 * 24, // ✅ 1-day session lifespan
-                secure: process.env.NODE_ENV === 'production', // ✅ Only secure cookies in production
+                maxAge: 1000 * 60 * 60 * 24,
+                secure: process.env.NODE_ENV === 'production',
                 httpOnly: true,
-                sameSite: 'lax', // ✅ Allows cookies for authentication
+                sameSite: 'lax',
             }
         }));
+        
 
         app.use(passport.initialize());
         app.use(passport.session());
