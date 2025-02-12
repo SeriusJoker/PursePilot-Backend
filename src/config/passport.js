@@ -20,11 +20,11 @@ passport.deserializeUser(async (id, done) => {
     }
 });
 
-// ✅ Google OAuth Strategy
+// ✅ Google OAuth Strategy (Ensuring `BACKEND_URL` is used correctly)
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: `${process.env.BACKEND_URL}/api/auth/google/callback`,
+    callbackURL: `${process.env.BACKEND_URL || 'http://localhost:5000'}/api/auth/google/callback`, // ✅ Fallback for local testing
     passReqToCallback: true
 }, async (req, accessToken, refreshToken, profile, done) => {
     try {
@@ -40,7 +40,7 @@ passport.use(new GoogleStrategy({
             });
             await user.save();
         }
-        
+
         return done(null, user);
     } catch (err) {
         console.error("❌ Error in Google Auth:", err);
