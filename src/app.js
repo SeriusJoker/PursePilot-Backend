@@ -5,7 +5,7 @@ const morgan = require('morgan');
 const session = require('express-session');
 const passport = require('passport');
 const MongoStore = require('connect-mongo');
-require('./config/passport'); // ✅ Ensure passport is initialized
+require('./config/passport'); // ✅ Load Passport before using it
 const connectDB = require('./config/db');
 const cron = require('node-cron');
 const processRecurringTransactions = require('./processRecurringTransactions');
@@ -13,7 +13,7 @@ const processRecurringTransactions = require('./processRecurringTransactions');
 const app = express();
 
 (async () => {
-    await connectDB(); // ✅ Ensure MongoDB connects before starting Express
+    const conn = await connectDB(); // ✅ Wait for MongoDB to connect
 
     // Middleware
     app.use(express.json());
@@ -24,7 +24,7 @@ const app = express();
     }));
     app.use(morgan('dev'));
 
-    // ✅ Ensure sessions are set up properly
+    // ✅ Use the database connection for session storage
     app.use(session({
         secret: process.env.SESSION_SECRET,
         resave: false,
@@ -34,13 +34,12 @@ const app = express();
             collectionName: 'sessions',
         }),
         cookie: {
-            maxAge: 1000 * 60 * 60 * 24, // 1 day
+            maxAge: 1000 * 60 * 60 * 24,
             secure: process.env.NODE_ENV === 'production',
             httpOnly: true,
         }
     }));
 
-    // ✅ Load passport after session middleware
     app.use(passport.initialize());
     app.use(passport.session());
 
@@ -53,13 +52,13 @@ const app = express();
         res.send('🚀 API is running...');
     });
 
-    // Recurring transaction job
+    // ✅ Schedule recurring transaction job
     cron.schedule('0 0 * * *', () => {
         console.log("⏳ Running scheduled job for recurring transactions...");
         processRecurringTransactions();
     });
 
-    // Start Server
+    // ✅ Only start the server once MongoDB is connected
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
         console.log(`🚀 Server running on port ${PORT}`);
