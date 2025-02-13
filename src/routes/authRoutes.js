@@ -36,6 +36,11 @@ router.get('/google/callback',
 // @route   GET /api/auth/logout
 // @desc    Logout user
 router.get('/logout', (req, res) => {
+    if (!req.session) {
+        console.warn("⚠️ No active session found during logout.");
+        return res.status(400).json({ error: "No active session" });
+    }
+
     req.logout(function(err) {
         if (err) {
             console.error("❌ Logout Error:", err);
@@ -44,6 +49,7 @@ router.get('/logout', (req, res) => {
 
         req.session.destroy(() => { // ✅ Destroy session to fully log out
             res.clearCookie('connect.sid'); // ✅ Clear session cookie
+            console.log("✅ User logged out successfully");
             res.send({ message: "Logged out successfully" });
         });
     });
@@ -55,6 +61,7 @@ router.get('/check', (req, res) => {
     console.log("🔍 Checking Authentication Status...");
     console.log("📌 Session Data:", req.session);
     console.log("📌 User Data:", req.user);
+    console.log("🍪 Cookies Sent:", req.cookies); // ✅ Log cookies sent with the request
 
     if (req.isAuthenticated()) {
         res.status(200).json({ user: req.user });
