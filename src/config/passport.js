@@ -6,7 +6,7 @@ const User = require('../models/User');
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "/api/auth/google/callback"
+    callbackURL: process.env.GOOGLE_REDIRECT_URI // ✅ Ensure this uses the correct environment variable
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         let user = await User.findOne({ googleId: profile.id });
@@ -20,7 +20,7 @@ passport.use(new GoogleStrategy({
             await user.save();
         }
 
-        // ✅ Generate JWT token instead of using session
+        // ✅ Generate JWT token
         const token = jwt.sign(
             { userId: user.id, email: user.email },
             process.env.JWT_SECRET,
