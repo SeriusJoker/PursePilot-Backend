@@ -20,6 +20,7 @@ const app = express();
         // ✅ Create a session store connected to MongoDB
         const sessionStore = MongoStore.create({
             mongoUrl: process.env.MONGO_URI,
+            dbName: 'finance_app',  // ✅ Explicitly set the database name
             collectionName: 'sessions',
             autoRemove: 'native', // ✅ Automatically remove expired sessions
         });
@@ -32,8 +33,8 @@ const app = express();
         app.use(express.json());
 
         app.use(cors({
-            origin: ['http://localhost:3000', 'https://pursepilot-frontend.onrender.com'],
-            credentials: true,
+            origin: 'https://pursepilot-frontend.onrender.com', // ✅ Allow only frontend
+            credentials: true, // ✅ Allows sending session cookies
         }));
         app.use(morgan('dev'));
 
@@ -42,12 +43,7 @@ const app = express();
             secret: process.env.SESSION_SECRET,
             resave: false,
             saveUninitialized: false,
-            store: MongoStore.create({
-                mongoUrl: process.env.MONGO_URI,
-                dbName: 'finance_app',  // ✅ Explicitly set the database name
-                collectionName: 'sessions',
-                autoRemove: 'native', 
-            }),
+            store: sessionStore,
             cookie: {
                 maxAge: 1000 * 60 * 60 * 24,
                 secure: process.env.NODE_ENV === 'production',
@@ -55,7 +51,6 @@ const app = express();
                 sameSite: 'lax',
             }
         }));
-        
 
         app.use(passport.initialize());
         app.use(passport.session());
