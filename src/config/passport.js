@@ -6,8 +6,9 @@ const User = require('../models/User');
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_REDIRECT_URI
-}, async (accessToken, refreshToken, profile, done) => {
+    callbackURL: process.env.GOOGLE_REDIRECT_URI // e.g. https://pursepilot-backend.onrender.com/api/auth/google/callback
+}, 
+async (accessToken, refreshToken, profile, done) => {
     try {
         let user = await User.findOne({ googleId: profile.id });
 
@@ -20,17 +21,16 @@ passport.use(new GoogleStrategy({
             await user.save();
         }
 
-        // Generate JWT token
-        const token = jwt.sign(
-            { userId: user.id, email: user.email },
-            process.env.JWT_SECRET,
-            { expiresIn: '7d' }
-        );
+        // You can generate a token here, but we also do it in authRoutes.js. 
+        // If you want to store it here, return it in the final argument:
+        // e.g. done(null, { user, token: '...' });
 
-        return done(null, { user, token }); // Return user and token without session login
+        // For this example, just return user object
+        return done(null, { user });
     } catch (err) {
         return done(err, null);
     }
 }));
 
+// We do NOT use serializeUser/deserializeUser since we're not using sessions
 module.exports = passport;

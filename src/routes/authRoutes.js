@@ -13,24 +13,28 @@ router.get('/google',
 );
 
 // @route   GET /api/auth/google/callback
-// @desc    Handle Google login callback and redirect with token
+// @desc    Handle Google login callback and redirect with token (No session)
 router.get('/google/callback',
-    passport.authenticate('google', { failureRedirect: '/' }),
+    passport.authenticate('google', { session: false, failureRedirect: '/' }),
     (req, res) => {
         if (!req.user) {
             return res.redirect(`${FRONTEND_URL}/login?error=unauthorized`);
         }
 
-        console.log(`✅ Google Login Success: User - ${req.user.email}`);
+        // Here, req.user is the object returned by passport's verify function
+        // We'll assume req.user has { user, token } as set in passport.js
+        const { user } = req.user; 
+        console.log(`Google Login Success: User - ${user.email}`);
 
-        // ✅ Generate JWT Token
+        // Generate a new JWT token here if you prefer, or rely on the token from passport.js
+        // For clarity, let's generate a brand-new token:
         const token = jwt.sign(
-            { id: req.user._id, email: req.user.email },
+            { id: user._id, email: user.email },
             JWT_SECRET,
-            { expiresIn: '1d' } // Token expires in 1 day
+            { expiresIn: '1d' }
         );
 
-        // ✅ Redirect user to frontend with token
+        // Redirect user to frontend with token
         res.redirect(`${FRONTEND_URL}/dashboard?token=${token}`);
     }
 );
@@ -44,7 +48,7 @@ router.get('/logout', (req, res) => {
 // @route   GET /api/auth/check
 // @desc    Check if user is authenticated via JWT
 router.get('/check', (req, res) => {
-    const token = req.headers.authorization?.split(" ")[1]; // Extract token from headers
+    const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {
         return res.status(401).json({ error: "No token provided" });
