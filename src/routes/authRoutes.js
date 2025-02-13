@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret"; // Change this to a secure secret
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret"; // Use a secure secret
 
 // @route   GET /api/auth/google
 // @desc    Start Google OAuth Login
@@ -13,38 +13,38 @@ router.get('/google',
 );
 
 // @route   GET /api/auth/google/callback
-// @desc    Handle Google login callback
+// @desc    Handle Google login callback and redirect with token
 router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
         if (!req.user) {
-            return res.status(401).json({ error: "Authentication failed" });
+            return res.redirect(`${FRONTEND_URL}/login?error=unauthorized`);
         }
 
         console.log(`✅ Google Login Success: User - ${req.user.email}`);
 
-        // Generate JWT Token
+        // ✅ Generate JWT Token
         const token = jwt.sign(
             { id: req.user._id, email: req.user.email },
             JWT_SECRET,
             { expiresIn: '1d' } // Token expires in 1 day
         );
 
-        // Send the token as a response
-        res.json({ token });
+        // ✅ Redirect user to frontend with token
+        res.redirect(`${FRONTEND_URL}/dashboard?token=${token}`);
     }
 );
 
 // @route   GET /api/auth/logout
-// @desc    Logout user
+// @desc    Logout user (Handled on frontend by clearing token)
 router.get('/logout', (req, res) => {
     res.json({ message: "Logged out successfully" });
 });
 
 // @route   GET /api/auth/check
-// @desc    Check if user is authenticated
+// @desc    Check if user is authenticated via JWT
 router.get('/check', (req, res) => {
-    const token = req.headers.authorization?.split(" ")[1];
+    const token = req.headers.authorization?.split(" ")[1]; // Extract token from headers
 
     if (!token) {
         return res.status(401).json({ error: "No token provided" });
