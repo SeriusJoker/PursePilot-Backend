@@ -35,6 +35,8 @@ const app = express();
         app.use(cors({
             origin: 'https://pursepilot-frontend.onrender.com', // ✅ Allow only frontend
             credentials: true, // ✅ Allows sending session cookies
+            allowedHeaders: ['Content-Type', 'Authorization'], // ✅ Ensure required headers are allowed
+            methods: ['GET', 'POST', 'PUT', 'DELETE'], // ✅ Allow necessary methods
         }));
         app.use(morgan('dev'));
 
@@ -45,10 +47,10 @@ const app = express();
             saveUninitialized: false,
             store: sessionStore,
             cookie: {
-                maxAge: 1000 * 60 * 60 * 24,
-                secure: false, // 🔴 Temporarily disable secure cookies
-                httpOnly: true,
-                sameSite: 'lax',
+                maxAge: 1000 * 60 * 60 * 24, // 1-day session
+                secure: process.env.NODE_ENV === 'production', // ✅ Only secure in production
+                httpOnly: true, // ✅ Prevent client-side access
+                sameSite: 'None', // 🔥 Required for cross-site cookies in Chrome
             }
         }));
 
