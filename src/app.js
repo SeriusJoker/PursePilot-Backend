@@ -46,7 +46,7 @@ const app = express();
             store: sessionStore,
             cookie: {
                 maxAge: 1000 * 60 * 60 * 24,
-                secure: process.env.NODE_ENV === 'production',
+                secure: false, // 🔴 Temporarily disable secure cookies
                 httpOnly: true,
                 sameSite: 'lax',
             }
