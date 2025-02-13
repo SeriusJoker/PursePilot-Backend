@@ -1,45 +1,17 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// ✅ Store only user ID in session
-passport.serializeUser((user, done) => {
-    console.log("🔐 Serializing User:", user.id);
-    done(null, user.id);
-});
-
-// ✅ Retrieve user from session using ID
-passport.deserializeUser(async (id, done) => {
-    try {
-        console.log("🔄 Deserializing User with ID:", id);
-        const user = await User.findById(id);
-        if (user) {
-            console.log("✅ User Found in Database:", user);
-            done(null, user);
-        } else {
-            console.log("⚠️ User Not Found");
-            done(null, false);
-        }
-    } catch (err) {
-        console.error("❌ Error deserializing user:", err);
-        done(err, null);
-    }
-});
-
-// ✅ Google OAuth Strategy
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: `${process.env.BACKEND_URL}/api/auth/google/callback`,
-    passReqToCallback: true
-}, async (req, accessToken, refreshToken, profile, done) => {
+    callbackURL: "/api/auth/google/callback"
+}, async (accessToken, refreshToken, profile, done) => {
     try {
-        console.log("🔑 Google Profile Received:", profile);
-        
         let user = await User.findOne({ googleId: profile.id });
+
         if (!user) {
-            console.log("🆕 Creating New User");
             user = new User({
                 googleId: profile.id,
                 displayName: profile.displayName,
@@ -48,10 +20,15 @@ passport.use(new GoogleStrategy({
             await user.save();
         }
 
-        console.log("✅ User Authenticated:", user);
-        return done(null, user);
+        // ✅ Generate JWT token instead of using session
+        const token = jwt.sign(
+            { userId: user.id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' } // Token valid for 7 days
+        );
+
+        return done(null, { user, token }); // Pass both user and token
     } catch (err) {
-        console.error("❌ Error in Google Auth:", err);
         return done(err, null);
     }
 }));

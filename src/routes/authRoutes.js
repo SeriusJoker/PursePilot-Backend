@@ -1,10 +1,10 @@
 const express = require('express');
 const passport = require('passport');
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
-
-// Load frontend URL from environment variables
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret"; // Change this to a secure secret
 
 // @route   GET /api/auth/google
 // @desc    Start Google OAuth Login
@@ -17,56 +17,44 @@ router.get('/google',
 router.get('/google/callback',
     passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
-        console.log(`✅ Google Login Success: User - ${req.user ? req.user.email : "No user"}`);
-        
-        // 🔍 Debug session immediately after login
-        console.log("📌 Session After Login:", req.session);
-        console.log("📌 User After Login:", req.user);
+        if (!req.user) {
+            return res.status(401).json({ error: "Authentication failed" });
+        }
 
-        // Ensure session is saved before redirecting
-        req.session.save(err => {
-            if (err) {
-                console.error("❌ Error saving session:", err);
-            }
-            res.redirect(`${FRONTEND_URL}/dashboard`);
-        });
+        console.log(`✅ Google Login Success: User - ${req.user.email}`);
+
+        // Generate JWT Token
+        const token = jwt.sign(
+            { id: req.user._id, email: req.user.email },
+            JWT_SECRET,
+            { expiresIn: '1d' } // Token expires in 1 day
+        );
+
+        // Send the token as a response
+        res.json({ token });
     }
 );
 
 // @route   GET /api/auth/logout
 // @desc    Logout user
 router.get('/logout', (req, res) => {
-    if (!req.session) {
-        console.warn("⚠️ No active session found during logout.");
-        return res.status(400).json({ error: "No active session" });
-    }
-
-    req.logout(function(err) {
-        if (err) {
-            console.error("❌ Logout Error:", err);
-            return res.status(500).send({ error: "Logout failed" });
-        }
-
-        req.session.destroy(() => { // ✅ Destroy session to fully log out
-            res.clearCookie('connect.sid'); // ✅ Clear session cookie
-            console.log("✅ User logged out successfully");
-            res.send({ message: "Logged out successfully" });
-        });
-    });
+    res.json({ message: "Logged out successfully" });
 });
 
 // @route   GET /api/auth/check
 // @desc    Check if user is authenticated
 router.get('/check', (req, res) => {
-    console.log("🔍 Checking Authentication Status...");
-    console.log("📌 Session Data:", req.session);
-    console.log("📌 User Data:", req.user);
-    console.log("🍪 Cookies Sent:", req.cookies); // ✅ Log cookies sent with the request
+    const token = req.headers.authorization?.split(" ")[1];
 
-    if (req.isAuthenticated()) {
-        res.status(200).json({ user: req.user });
-    } else {
-        res.status(401).json({ error: "Not authenticated" });
+    if (!token) {
+        return res.status(401).json({ error: "No token provided" });
+    }
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        res.json({ user: decoded });
+    } catch (error) {
+        return res.status(401).json({ error: "Invalid token" });
     }
 });
 

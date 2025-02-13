@@ -1,6 +1,19 @@
+const jwt = require('jsonwebtoken');
+
 module.exports = (req, res, next) => {
-    if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "❌ Not authorized. Please log in." });
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: "❌ Not authorized. No token provided." });
     }
-    next();
+
+    const token = authHeader.split(' ')[1]; // Extract token from "Bearer <token>"
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded; // Attach decoded user data to request
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: "❌ Token is invalid or expired." });
+    }
 };
