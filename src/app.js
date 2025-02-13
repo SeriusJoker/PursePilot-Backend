@@ -2,9 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
-const session = require('express-session');
 const passport = require('passport');
-const MongoStore = require('connect-mongo');
 require('./config/passport'); // ✅ Load Passport before using it
 const connectDB = require('./config/db');
 const cron = require('node-cron');
@@ -15,51 +13,23 @@ const app = express();
 (async () => {
     try {
         console.log("⏳ Connecting to MongoDB...");
-        const conn = await connectDB(); // ✅ Wait for MongoDB to connect
-
-        // ✅ Create a session store connected to MongoDB
-        const sessionStore = MongoStore.create({
-            mongoUrl: process.env.MONGO_URI,
-            dbName: 'finance_app',  // ✅ Explicitly set the database name
-            collectionName: 'sessions',
-            autoRemove: 'native', // ✅ Automatically remove expired sessions
-        });
-
-        // ✅ Debugging session store connection
-        sessionStore.on('connected', () => console.log("✅ Session store connected to MongoDB"));
-        sessionStore.on('error', (err) => console.error("❌ Session store error:", err));
+        await connectDB(); // ✅ Wait for MongoDB to connect
 
         // Middleware
         app.use(express.json());
 
         app.use(cors({
             origin: 'https://pursepilot-frontend.onrender.com', // ✅ Allow only frontend
-            credentials: true, // ✅ Allows sending session cookies
-            allowedHeaders: ['Content-Type', 'Authorization'], // ✅ Ensure required headers are allowed
-            methods: ['GET', 'POST', 'PUT', 'DELETE'], // ✅ Allow necessary methods
+            credentials: true, // ✅ Ensures frontend sends cookies/headers
+            allowedHeaders: ['Content-Type', 'Authorization'], // ✅ Allow token-based auth
+            methods: ['GET', 'POST', 'PUT', 'DELETE'],
         }));
         app.use(morgan('dev'));
 
-        // ✅ Use MongoDB session storage
-        app.use(session({
-            secret: process.env.SESSION_SECRET,
-            resave: false,
-            saveUninitialized: false,
-            store: sessionStore,
-            cookie: {
-                maxAge: 1000 * 60 * 60 * 24, // 1-day session
-                secure: process.env.NODE_ENV === 'production', // ✅ Only secure in production
-                httpOnly: true, // ✅ Prevent client-side access
-                sameSite: 'None', // 🔥 Required for cross-site cookies in Chrome
-            }
-        }));
+        app.use(passport.initialize()); // ✅ Only initialize passport (No sessions!)
 
-        app.use(passport.initialize());
-        app.use(passport.session());
-
-        // ✅ Debug session and authentication
+        // ✅ Debug authentication
         app.use((req, res, next) => {
-            console.log("🔍 Session Debugging:", req.session);
             console.log("🔍 Authenticated User:", req.user);
             next();
         });
@@ -79,7 +49,7 @@ const app = express();
             processRecurringTransactions();
         });
 
-        // ✅ Only start the server once MongoDB is connected
+        // ✅ Start the server
         const PORT = process.env.PORT || 5000;
         app.listen(PORT, () => {
             console.log(`🚀 Server running on port ${PORT}`);
